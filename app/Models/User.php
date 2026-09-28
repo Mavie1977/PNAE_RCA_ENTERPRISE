@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Models;
-
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +18,11 @@ class User extends Authenticatable
     public const ROLE_AGENT = 'agent';
     public const ROLE_CITOYEN = 'citoyen';
 
+
+public function agentProfile(): HasOne
+{
+    return $this->hasOne(AgentProfile::class);
+}
     protected $fillable = [
         'name',
         'email',
@@ -51,6 +56,22 @@ class User extends Authenticatable
             self::ROLE_ADMIN => 'Administrateur national',
         ];
     }
+
+public function careerHistories(): HasMany
+{
+    return $this->hasMany(
+        AgentCareerHistory::class,
+        'agent_id'
+    )->latest('effective_at');
+}
+
+public function advancements()
+{
+    return $this->hasMany(
+        AgentAdvancement::class,
+        'agent_id'
+    );
+}
 
     public function ministry(): BelongsTo
     {
@@ -92,4 +113,54 @@ class User extends Authenticatable
         return $ministryId !== null
             && (int) $this->ministry_id === $ministryId;
     }
+	public function isResponsableFonctionPublique(): bool
+{
+    if ($this->role !== self::ROLE_RESPONSABLE) {
+        return false;
+    }
+
+    return $this->ministry()
+        ->where('code', 'FONCTION_PUBLIQUE')
+        ->exists();
+}
+
+public function leaves()
+{
+    return $this->hasMany(
+        AgentLeave::class,
+        'agent_id'
+    );
+}
+
+public function disciplinaryActions()
+{
+    return $this->hasMany(
+        AgentDisciplinaryAction::class,
+        'agent_id'
+    );
+}
+public function rhDocuments()
+{
+    return $this->hasMany(
+        AgentRhDocument::class,
+        'agent_id'
+    );
+}
+
+public function trainings()
+{
+    return $this->hasMany(
+        AgentTraining::class,
+        'agent_id'
+    );
+}
+
+public function skills()
+{
+    return $this->hasMany(
+        AgentSkill::class,
+        'agent_id'
+    );
+}
+
 }

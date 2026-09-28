@@ -17,6 +17,29 @@
 
 <header class="main-header agent-header">
 
+<a
+    href="{{ route('notifications.index') }}"
+    class="header-notification-link"
+    title="Mes notifications"
+>
+    <span>🔔</span>
+
+   @php
+    $unreadCount = auth()->check()
+        ? \App\Models\Notification::query()
+            ->where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->count()
+        : 0;
+   @endphp
+
+    @if ($unreadCount > 0)
+        <span class="header-notification-count">
+            {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+        </span>
+    @endif
+</a>
+
     <div class="brand-block">
         <a href="{{ route('agent.dashboard') }}" class="brand-link">
             <div class="rca-flag" aria-hidden="true">

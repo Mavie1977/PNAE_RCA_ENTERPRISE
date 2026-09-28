@@ -1,0 +1,45 @@
+# ==========================================
+# PNAE-RCA ENTERPRISE - Laravel
+# ==========================================
+
+# Environnement / secrets
+.env
+.env.*
+!.env.example
+
+# PHP / Composer
+/vendor/
+
+# Node / NPM
+/node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Vite
+/public/build/
+/public/hot
+
+# Laravel
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/bootstrap/cache/*
+
+# Tests
+.phpunit.result.cache
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Divers
+Homestead.json
+Homestead.yaml
+auth.json

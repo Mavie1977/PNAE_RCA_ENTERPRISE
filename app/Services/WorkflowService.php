@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Application;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use App\Notifications\ApplicationStatusChangedNotification;
 
 class WorkflowService
 {
@@ -68,9 +69,27 @@ class WorkflowService
             $newStatus,
             $comment
         ) {
-            $application->update([
-                'status' => $newStatus,
-            ]);
+            $oldStatus = $application->status;
+
+$application->update([
+    'status' => $newStatus,
+    'agent_comment' => $comment,
+]);
+
+$application->loadMissing('user');
+
+if ($application->user) {
+    $application->user->notify(
+        new ApplicationStatusChangedNotification(
+            application: $application,
+            oldStatus: $oldStatus,
+            newStatus: $newStatus,
+            comment: $comment,
+        )
+    );
+}
+
+return $application->refresh();
 
             DB::table('workflow_logs')->insert([
                 'application_id' => $application->id,
