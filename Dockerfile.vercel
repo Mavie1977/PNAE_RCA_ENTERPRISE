@@ -1,0 +1,43 @@
+FROM php:8.3-cli
+
+WORKDIR /var/www/html
+
+# Dépendances système nécessaires à Laravel
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libpq-dev \
+    libzip-dev \
+    libicu-dev \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        pgsql \
+        zip \
+        intl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installation de Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copie du projet Laravel
+COPY . .
+
+# Installation des dépendances PHP de production
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --prefer-dist
+
+# Permissions Laravel
+RUN mkdir -p \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# Vercel fournit PORT au conteneur
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-3000}"]
