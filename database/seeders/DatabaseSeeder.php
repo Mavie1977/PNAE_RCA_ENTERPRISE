@@ -1,25 +1,4 @@
 <?php
-
 namespace Database\Seeders;
-
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-
-class DatabaseSeeder extends Seeder
-{
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
-    public function run(): void
-    {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-    }
-}
+use App\Models\Commune; use App\Models\Ministry; use App\Models\Prefecture; use App\Models\Procedure; use App\Models\User; use Illuminate\Database\Seeder; use Illuminate\Support\Facades\Hash; use Illuminate\Support\Str;
+class DatabaseSeeder extends Seeder { public function run(): void { User::create(['name'=>'Administrateur PNAE','email'=>'admin@pnae-rca.cf','phone'=>'70000000','password'=>Hash::make('password'),'role'=>'admin','active'=>true]); User::create(['name'=>'Responsable National','email'=>'responsable@pnae-rca.cf','phone'=>'71000000','password'=>Hash::make('password'),'role'=>'responsable','active'=>true]); User::create(['name'=>'Agent Public','email'=>'agent@pnae-rca.cf','phone'=>'72000000','password'=>Hash::make('password'),'role'=>'agent','active'=>true]); User::create(['name'=>'Citoyen Test','email'=>'citoyen@pnae-rca.cf','phone'=>'75000000','password'=>Hash::make('password'),'role'=>'citoyen','active'=>true]); foreach(['Bangui','Ombella-Mpoko','Lobaye','Nana-Mambéré','Ouaka'] as $pref){ $p=Prefecture::create(['name'=>$pref]); Commune::create(['prefecture_id'=>$p->id,'name'=>'Commune principale']); } $items=[['Ministère de l’Intérieur',['Carte nationale d’identité','Passeport','Autorisation administrative']],['Ministère de la Fonction Publique',['Intégration dans la fonction publique','Demande d’avancement','Congé administratif']],['Ministère des Finances',['Numéro d’identification fiscale','Quitus fiscal','Paiement taxe']],['Ministère de l’Éducation',['Demande d’équivalence','Inscription concours','Attestation scolaire']],['Ministère de la Santé',['Certificat médical','Autorisation sanitaire','Carte sanitaire']],['Ministère du Commerce',['Registre de commerce','Licence commerciale','Autorisation d’activité']]]; foreach($items as [$name,$procedures]){ $m=Ministry::create(['name'=>$name,'slug'=>Str::slug($name),'description'=>'Ministère connecté à la plateforme nationale PNAE-RCA.','active'=>true]); foreach($procedures as $i=>$title){ Procedure::create(['ministry_id'=>$m->id,'title'=>$title,'slug'=>Str::slug($title), 'description'=>'Démarche administrative disponible en ligne via le guichet numérique.', 'required_documents'=>['Pièce d’identité','Justificatif de domicile','Formulaire signé'], 'fee'=>($i+1)*1000, 'processing_days'=>7+$i, 'active'=>true]); } } } }

@@ -1,8 +1,32 @@
+# ==========================================================
+# PNAE-RCA ENTERPRISE
+# Laravel 13 + PHP 8.3 + Node.js/Vite
+# Vercel
+# ==========================================================
+
+# ----------------------------------------------------------
+# 1. Compilation frontend
+# ----------------------------------------------------------
+FROM node:22-alpine AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+
+# ----------------------------------------------------------
+# 2. Application Laravel
+# ----------------------------------------------------------
 FROM php:8.3-cli
 
 WORKDIR /var/www/html
 
-# Dépendances système nécessaires à Laravel
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -17,20 +41,38 @@ RUN apt-get update && apt-get install -y \
         intl \
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de Composer
+
+# ----------------------------------------------------------
+# Composer
+# ----------------------------------------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copie du projet Laravel
+
+# ----------------------------------------------------------
+# Application
+# ----------------------------------------------------------
 COPY . .
 
-# Installation des dépendances PHP de production
+
+# ----------------------------------------------------------
+# Dépendances PHP
+# ----------------------------------------------------------
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --prefer-dist
 
-# Permissions Laravel
+
+# ----------------------------------------------------------
+# Assets Vite compilés
+# ----------------------------------------------------------
+COPY --from=frontend /app/public/build ./public/build
+
+
+# ----------------------------------------------------------
+# Dossiers Laravel
+# ----------------------------------------------------------
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
@@ -39,5 +81,8 @@ RUN mkdir -p \
     bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Vercel fournit PORT au conteneur
+
+# ----------------------------------------------------------
+# Démarrage Vercel
+# ----------------------------------------------------------
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-3000}"]

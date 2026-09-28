@@ -1,0 +1,1 @@
+@extends('layouts.public') @section('content')<section class='page'><h1>Le PNAE-RCA</h1><p>Le Programme National d’Administration Électronique modernise l’accès aux services publics en République Centrafricaine.</p></section>@endsection
