@@ -43,3 +43,6 @@ Thumbs.db
 Homestead.json
 Homestead.yaml
 auth.json
+
+.vercel
+.env*
