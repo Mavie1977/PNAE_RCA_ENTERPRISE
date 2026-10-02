@@ -23,40 +23,33 @@ class AuthController extends Controller
     }
 
     public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-        ]);
+{
+    $validated = $request->validate([
+        'name' => ['required', 'string', 'max:150'],
+        'email' => ['required', 'email', 'max:150', 'unique:users,email'],
+        'phone' => ['nullable', 'string', 'max:30'],
+        'password' => ['required', 'string', 'min:6', 'confirmed'],
+    ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'password' => Hash::make($validated['password']),
-            'role' => 'citoyen',
-            'active' => true,
-        ]);
+    $user = User::create([
+        'name' => $validated['name'],
+        'email' => Str::lower(trim($validated['email'])),
+        'phone' => $validated['phone'] ?? null,
+        'password' => Hash::make($validated['password']),
+        'role' => User::ROLE_CITOYEN,
+        'active' => true,
+        'ministry_id' => null,
+    ]);
 
-       $user = User::create([
-           'name' => $validated['name'],
-           'email' => $validated['email'],
-           'phone' => $validated['phone'] ?? null,
-           'password' => $validated['password'],
-           'role' => User::ROLE_CITOYEN,
-           'active' => true,
-           'ministry_id' => null,
-      ]);
+    Auth::login($user);
 
-        Auth::login($user);
-
-        return redirect()
-            ->route('citizen.dashboard')
-            ->with('success', 'Compte créé avec succès. Bienvenue sur PNAE-RCA.');
-    }
-
+    return redirect()
+        ->route('citizen.dashboard')
+        ->with(
+            'success',
+            'Compte créé avec succès. Bienvenue sur PNAE-RCA.'
+        );
+}
     public function login(Request $request)
 {
     $validated = $request->validate([
