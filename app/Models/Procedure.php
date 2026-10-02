@@ -16,6 +16,7 @@ class Procedure extends Model
         'title',
         'slug',
         'description',
+        'required_documents',
         'fee',
         'processing_days',
         'payment_required',
@@ -26,6 +27,7 @@ class Procedure extends Model
     protected function casts(): array
     {
         return [
+            'required_documents' => 'array',
             'fee' => 'decimal:2',
             'processing_days' => 'integer',
             'payment_required' => 'boolean',
