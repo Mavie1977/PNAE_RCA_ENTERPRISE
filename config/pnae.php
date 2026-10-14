@@ -5,6 +5,7 @@ return [
         'signatory_name' => env(
             'PNAE_SIGNATORY_NAME',
             'Le Directeur de l’administration électronique'
+
         ),
 
         'signatory_title' => env(
@@ -21,5 +22,6 @@ return [
             'PNAE_DOCUMENT_LOCATION',
             'Bangui'
         ),
+		'hmac_key' => env('PNAE_DOCUMENT_HMAC_KEY'),
     ],
 ];

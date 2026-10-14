@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\OfficialDocument;
+use App\Services\OfficialDocumentSignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class VerificationController extends Controller
 {
@@ -16,11 +18,7 @@ class VerificationController extends Controller
     public function search(Request $request)
     {
         $validated = $request->validate([
-            'official_number' => [
-                'required',
-                'string',
-                'max:100',
-            ],
+            'official_number' => ['required', 'string', 'max:100'],
         ]);
 
         $officialDocument = OfficialDocument::where(
@@ -43,9 +41,8 @@ class VerificationController extends Controller
         );
     }
 
-    public function publicShow(
-        OfficialDocument $officialDocument
-    ) {
+    public function publicShow(OfficialDocument $officialDocument)
+    {
         return $this->verificationView($officialDocument);
     }
 
@@ -53,6 +50,12 @@ class VerificationController extends Controller
         Request $request,
         OfficialDocument $officialDocument
     ) {
+        abort_unless(
+            $request->hasValidSignature(),
+            403,
+            'Lien de vérification invalide.'
+        );
+
         abort_unless(
             hash_equals(
                 (string) $officialDocument->verification_token,
@@ -69,38 +72,75 @@ class VerificationController extends Controller
         OfficialDocument $officialDocument
     ) {
         $officialDocument->load([
-            'application.user',
             'application.procedure.ministry',
-            'generator',
         ]);
 
-        $fileExists = Storage::disk('local')->exists(
-            $officialDocument->file_path
-        );
+        $fileExists = false;
+        $hashValid = false;
 
-        $currentHash = $fileExists
-            ? hash(
-                'sha256',
-                Storage::disk('local')->get(
-                    $officialDocument->file_path
-                )
-            )
-            : null;
+        $path = $officialDocument->file_path;
 
-       $hashValid = $fileExists
-    && filled($officialDocument->file_hash_sha256)
-    && hash_equals(
-        (string) $officialDocument->file_hash_sha256,
-        (string) $currentHash
-    );
+        if (
+            is_string($path)
+            && $path !== ''
+            && $path !== 'pending'
+            && Storage::disk('local')->exists($path)
+        ) {
+            $fileExists = true;
 
-        return view(
-            'public.verification.show',
-            compact(
-                'officialDocument',
-                'fileExists',
-                'hashValid'
-            )
-        );
+            $stream = Storage::disk('local')->readStream($path);
+
+            if ($stream !== false) {
+                try {
+                    $context = hash_init('sha256');
+                    hash_update_stream($context, $stream);
+                    $currentHash = hash_final($context);
+
+                    $hashValid =
+                        filled($officialDocument->file_hash_sha256)
+                        && hash_equals(
+                            (string) $officialDocument->file_hash_sha256,
+                            $currentHash
+                        );
+                } finally {
+                    fclose($stream);
+                }
+            }
+        }
+
+        $signatureVersion = $officialDocument->signature_version;
+
+        $signatureValid = null;
+
+        if (
+            $signatureVersion ===
+            OfficialDocumentSignatureService::VERSION
+        ) {
+            try {
+                $signatureValid = app(
+                    OfficialDocumentSignatureService::class
+                )->verify($officialDocument);
+            } catch (Throwable $exception) {
+                report($exception);
+                $signatureValid = false;
+            }
+        } elseif ($signatureVersion !== null) {
+            $signatureValid = false;
+        }
+
+        $documentAuthentic =
+            $officialDocument->isActive()
+            && $fileExists
+            && $hashValid
+            && $signatureValid === true;
+
+        return view('public.verification.show', compact(
+            'officialDocument',
+            'fileExists',
+            'hashValid',
+            'signatureValid',
+            'signatureVersion',
+            'documentAuthentic'
+        ));
     }
 }
