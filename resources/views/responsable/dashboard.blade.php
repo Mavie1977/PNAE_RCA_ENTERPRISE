@@ -30,34 +30,34 @@
 
     <div class="decision-kpi-grid">
 
-        <article class="decision-kpi-card">
+        <a href="{{ route('responsable.applications.index') }}" class="decision-kpi-card" style="color:inherit;text-decoration:none;cursor:pointer;" aria-label="Voir les dossiers tous">
             <span class="decision-kpi-icon">📁</span>
 
             <div>
                 <small>Total des dossiers</small>
                 <strong>{{ $statistics['total'] }}</strong>
             </div>
-        </article>
+        </a>
 
-        <article class="decision-kpi-card">
+        <a href="{{ route('responsable.applications.index', ['status' => 'soumise']) }}" class="decision-kpi-card" style="color:inherit;text-decoration:none;cursor:pointer;" aria-label="Voir les dossiers soumis">
             <span class="decision-kpi-icon">📥</span>
 
             <div>
                 <small>Demandes soumises</small>
                 <strong>{{ $statistics['submitted'] }}</strong>
             </div>
-        </article>
+        </a>
 
-        <article class="decision-kpi-card">
+        <a href="{{ route('responsable.applications.index', ['status' => 'en_traitement']) }}" class="decision-kpi-card" style="color:inherit;text-decoration:none;cursor:pointer;" aria-label="Voir les dossiers en traitement">
             <span class="decision-kpi-icon">⌛</span>
 
             <div>
                 <small>En traitement</small>
                 <strong>{{ $statistics['processing'] }}</strong>
             </div>
-        </article>
+        </a>
 
-        <article class="decision-kpi-card">
+        <a href="{{ route('responsable.applications.index') }}" class="decision-kpi-card" style="color:inherit;text-decoration:none;cursor:pointer;" aria-label="Voir les dossiers validés">
             <span class="decision-kpi-icon">✅</span>
 
             <div>
@@ -66,16 +66,16 @@
                     {{ $statistics['validated'] + $statistics['completed'] }}
                 </strong>
             </div>
-        </article>
+        </a>
 
-        <article class="decision-kpi-card">
+        <a href="{{ route('responsable.applications.index', ['status' => 'rejetee']) }}" class="decision-kpi-card" style="color:inherit;text-decoration:none;cursor:pointer;" aria-label="Voir les dossiers rejetés">
             <span class="decision-kpi-icon">❌</span>
 
             <div>
                 <small>Dossiers rejetés</small>
                 <strong>{{ $statistics['rejected'] }}</strong>
             </div>
-        </article>
+        </a>
 
         <article class="decision-kpi-card">
             <span class="decision-kpi-icon">🧑‍💼</span>
@@ -175,7 +175,8 @@
                 </p>
             </div>
 
-            <span>📁</span>
+            <a href="{{ route('responsable.applications.index') }}"
+               class="btn btn-sm btn-primary">Tous les dossiers</a>
         </div>
 
         <div class="decision-table-wrapper">
@@ -184,6 +185,7 @@
                 <thead>
                     <tr>
                         <th>Référence</th>
+                        <th>Action</th>
                         <th>Citoyen</th>
                         <th>Démarche</th>
                         <th>Priorité</th>
@@ -196,9 +198,23 @@
                     @forelse ($recentApplications as $application)
                         <tr>
                             <td>
-                                <strong>
-                                    {{ $application->reference }}
-                                </strong>
+                                @if(isset($application->id))
+                                    <a href="{{ route('responsable.applications.show', $application->id) }}"
+                                       style="font-weight:700;color:#0b3d91;text-decoration:underline;">
+                                        {{ $application->reference }}
+                                    </a>
+                                @else
+                                    <strong>{{ $application->reference }}</strong>
+                                @endif
+                            </td>
+
+                            <td>
+                                @if(isset($application->id))
+                                    <a href="{{ route('responsable.applications.show', $application->id) }}"
+                                       class="btn btn-sm btn-primary">Ouvrir</a>
+                                @else
+                                    <span title="Identifiant non fourni par le contrôleur">Indisponible</span>
+                                @endif
                             </td>
 
                             <td>{{ $application->citizen_name }}</td>
@@ -233,7 +249,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="7">
                                 Aucun dossier n’est actuellement rattaché
                                 aux démarches de ce ministère.
                             </td>

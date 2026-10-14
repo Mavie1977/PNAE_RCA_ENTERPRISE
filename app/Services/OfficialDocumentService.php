@@ -45,11 +45,16 @@ class OfficialDocumentService
             ) {
                 $verificationToken = (string) Str::uuid();
                 $officialNumber = $this->generateOfficialNumber();
-                $signatureCode = $this->generateSignatureCode(
-                    $application,
-                    $officialNumber,
-                    $verificationToken
-                );
+				$issuedAt = now()->startOfSecond();
+                $signatureCode = app(
+                       \App\Services\OfficialDocumentSignatureService::class
+                     )->sign(
+                     (int) $application->id,
+                  (string) $application->reference,
+                           $officialNumber,
+                           $verificationToken,
+                           $issuedAt
+                      );
 $documentFingerprint = hash(
     'sha256',
     implode('|', [
@@ -59,7 +64,7 @@ $documentFingerprint = hash(
         $application->procedure_id,
         $officialNumber,
         $verificationToken,
-        now()->toIso8601String(),
+        $issuedAt->format('Y-m-d H:i:s'),
     ])
 );
                 $officialDocument = OfficialDocument::create([
@@ -73,8 +78,9 @@ $documentFingerprint = hash(
                     'mime_type' => 'application/pdf',
                     'hash_sha256' => $documentFingerprint,
                     'signature_code' => $signatureCode,
+                    'signature_version' => \App\Services\OfficialDocumentSignatureService::VERSION,
                     'status' => 'actif',
-                    'issued_at' => now(),
+                    'issued_at' => $issuedAt,
                 ]);
 
                 $verificationUrl = URL::signedRoute(
