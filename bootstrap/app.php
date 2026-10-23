@@ -14,15 +14,15 @@ return Application::configure(
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'role' => RoleMiddleware::class,
-
-            'responsable.fp' =>
-                ResponsableFonctionPubliqueMiddleware::class,
-        ]);
-    })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })
+    $exceptions->reportable(function (\Throwable $e): void {
+        \Illuminate\Support\Facades\Log::channel('stderr')
+            ->error('PNAE-RCA : exception Laravel', [
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+    });
+})
     ->create();

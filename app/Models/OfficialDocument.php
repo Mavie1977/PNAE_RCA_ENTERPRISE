@@ -15,11 +15,14 @@ class OfficialDocument extends Model
         'file_path',
         'mime_type',
         'hash_sha256',
+        'file_hash_sha256',
         'signature_code',
         'status',
         'issued_at',
         'revoked_at',
         'revocation_reason',
+		'signature_version',
+
     ];
 
     protected $casts = [
@@ -43,12 +46,12 @@ class OfficialDocument extends Model
             && $this->revoked_at === null;
     }
 
-    public function getStatusLabelAttribute(): string
-    {
-        return match ($this->status) {
-            'actif' => 'Valide',
-            'revoque' => 'Révoqué',
-            default => ucfirst($this->status),
-        };
-    }
+   public function getStatusLabelAttribute(): string
+{
+    return match ($this->status) {
+        'actif' => 'Valide',
+        'revoque' => 'Révoqué',
+        default => ucfirst($this->status),
+    };
+}
 }

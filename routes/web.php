@@ -416,7 +416,13 @@ Route::prefix('agent')
         | Traitement des demandes
         |--------------------------------------------------------------------------
         */
-
+        Route::post(
+            '/demandes/{application}/proposition',
+           [
+             \App\Http\Controllers\Agent\ApplicationController::class,
+            'proposeDecision',
+           ]
+       )->name('applications.propose');
         Route::get(
             '/demandes',
             [AgentApplicationController::class, 'index']
@@ -435,6 +441,7 @@ Route::prefix('agent')
             '/demandes/{application}/statut',
             [AgentApplicationController::class, 'updateStatus']
         )->name('applications.status');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -597,6 +604,24 @@ Route::patch(
     '/agents/{agent}/conges/{leave}/refuser',
     [AgentLeaveController::class, 'reject']
 )->name('agents.leaves.reject');
+
+Route::get(
+    '/demandes',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'index']
+)->name('applications.index');
+
+Route::get(
+    '/demandes/{application}',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'show']
+)->name('applications.show');
+
+Route::patch(
+    '/demandes/{application}/affecter',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'assign']
+)->name('applications.assign');
+
+Route::post('/demandes/{application}/decision', [\App\Http\Controllers\Responsable\ApplicationController::class, 'decide'])->name('applications.decide');
+
         /*
         |--------------------------------------------------------------------------
         | Tableau de bord responsable
@@ -622,6 +647,7 @@ Route::patch(
            '/agents/{agent}/dossier-rh',
            [ResponsableAgentController::class, 'show']
        )->name('agents.show');
+
         /*
         |--------------------------------------------------------------------------
         | Cycle de gestion des agents publics
