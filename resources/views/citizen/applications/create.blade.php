@@ -13,7 +13,17 @@
     <div class="form-card">
         <form method="POST" action="{{ route('citizen.application.store') }}" enctype="multipart/form-data">
             @csrf
+@if ($errors->any())
+    <div class="alert alert-danger" role="alert">
+        <strong>Impossible de déposer la demande :</strong>
 
+        <ul class="mb-0 mt-2">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
             <div class="form-header">
                 <h2>1. Choisir une démarche</h2>
                 <p>Cochez le service administratif concerné.</p>
@@ -22,7 +32,16 @@
             <div class="procedure-grid">
                 @foreach($procedures as $procedure)
                     <label class="procedure-option">
-                        <input type="radio" name="procedure_id" value="{{ $procedure->id }}" required>
+<input
+    type="radio"
+    name="procedure_id"
+    value="{{ $procedure->id }}"
+    @checked(
+        (string) old('procedure_id', $selectedProcedure?->id)
+        === (string) $procedure->id
+    )
+    required
+>
 
                         <div class="procedure-box">
                             <strong>{{ $procedure->title }}</strong>
