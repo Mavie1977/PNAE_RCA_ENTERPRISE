@@ -150,10 +150,16 @@ if (file_exists($logoPath)) {
 
                 $storedPath = $directory . '/' . $filename;
 
-                Storage::disk('r2_documents')->put(
-                      $storedPath,
-                      $pdfBinary
-                     );
+                $uploaded = Storage::disk('r2_documents')->put(
+                            $storedPath,
+                            $pdfBinary
+                       );
+
+if ($uploaded !== true) {
+    throw new \RuntimeException(
+        'Échec de l’enregistrement du PDF dans Cloudflare R2.'
+    );
+}
                 
 
                 $fileHash = hash('sha256', $pdfBinary);
