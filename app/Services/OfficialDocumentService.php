@@ -180,15 +180,26 @@ if (file_exists($logoPath)) {
                     'generator',
                 ]);
             });
-        } catch (Throwable $exception) {
-            if ($storedPath) {
-                Storage::disk('r2_documents')->delete($storedPath);
-            }
-
-            throw $exception;
+        } 
+		catch (Throwable $exception) 
+		{
+    if ($storedPath) {
+        try {
+            Storage::disk('r2_documents')->delete($storedPath);
+        } catch (Throwable $cleanupException) {
+            \Illuminate\Support\Facades\Log::warning(
+                'Échec du nettoyage du document R2',
+                [
+                    'path' => $storedPath,
+                    'error' => $cleanupException->getMessage(),
+                ]
+            );
         }
     }
 
+    throw $exception;
+}
+}
     private function validateApplication(
         Application $application
     ): void {
