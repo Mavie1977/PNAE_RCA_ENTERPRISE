@@ -150,10 +150,11 @@ if (file_exists($logoPath)) {
 
                 $storedPath = $directory . '/' . $filename;
 
-                Storage::disk('local')->put(
-                    $storedPath,
-                    $pdfBinary
-                );
+                Storage::disk('r2_documents')->put(
+                      $storedPath,
+                      $pdfBinary
+                     );
+                
 
                 $fileHash = hash('sha256', $pdfBinary);
                 $officialDocument->update([
@@ -181,7 +182,7 @@ if (file_exists($logoPath)) {
             });
         } catch (Throwable $exception) {
             if ($storedPath) {
-                Storage::disk('local')->delete($storedPath);
+                Storage::disk('r2_documents')->delete($storedPath);
             }
 
             throw $exception;
