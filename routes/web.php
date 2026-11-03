@@ -1040,3 +1040,47 @@ Route::prefix('admin')
             [SystemHealthController::class, 'index']
         )->name('system-health.index');
     });
+// DIAGNOSTIC TEMPORAIRE R2 — PREVIEW UNIQUEMENT
+Route::get('/diagnostic-r2-preview', function () {
+    abort_unless(
+        app()->environment('preview'),
+        404
+    );
+
+    abort_unless(
+        auth()->check() && auth()->user()->role === 'admin',
+        403
+    );
+
+    $disk = \Illuminate\Support\Facades\Storage::disk('r2_documents');
+    $path = 'tests/diagnostic-vercel-' . \Illuminate\Support\Str::uuid() . '.txt';
+
+    try {
+        $uploaded = $disk->put($path, 'Diagnostic R2 PNAE-RCA Preview');
+
+        $exists = $disk->exists($path);
+
+        if ($exists) {
+            $disk->delete($path);
+        }
+
+        return response()->json([
+            'environment' => app()->environment(),
+            'bucket' => config('filesystems.disks.r2_documents.bucket'),
+            'uploaded' => $uploaded,
+            'exists' => $exists,
+            'success' => $uploaded === true && $exists === true,
+        ]);
+    } catch (\Throwable $exception) {
+        \Illuminate\Support\Facades\Log::error(
+            'Diagnostic R2 Preview',
+            ['exception' => $exception]
+        );
+
+        return response()->json([
+            'success' => false,
+            'error_type' => get_class($exception),
+            'message' => 'Échec du diagnostic R2. Consulter les logs Vercel.',
+        ], 500);
+    }
+})->middleware(['auth', 'role:admin']);
