@@ -1104,11 +1104,25 @@ $signatureValid = $doc
     : null;
 
     return response()->json([
-        'environment' => app()->environment(),
-        'key_configured' => is_string($key) && strlen($key) >= 32,
-        'key_length' => is_string($key) ? strlen($key) : 0,
-        'key_fingerprint' => is_string($key)
-            ? hash('sha256', $key)
-            : null,
-    ])->header('Cache-Control', 'no-store');
+    'environment' => app()->environment(),
+
+    'key_configured' =>
+        is_string($key) && strlen($key) >= 32,
+
+    'key_length' =>
+        is_string($key) ? strlen($key) : 0,
+
+    'key_fingerprint' =>
+        is_string($key) ? hash('sha256', $key) : null,
+
+    'document_found' => $doc !== null,
+
+    'document_id' => $doc?->id,
+
+    'document_status' => $doc?->status,
+
+    'signature_version' => $doc?->signature_version,
+
+    'document_signature_valid' => $signatureValid,
+])->header('Cache-Control', 'no-store');
 });
