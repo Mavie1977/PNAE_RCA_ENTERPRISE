@@ -10,6 +10,12 @@
 
     <title>@yield('title', 'Espace Responsable Ministère — PNAE-RCA')</title>
 
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
+
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -41,7 +47,7 @@
 </a>
 
     <div class="brand-block">
-        <a href="{{ route('agent.dashboard') }}" class="brand-link">
+        <a href="{{ route('responsable.dashboard') }}" class="brand-link">
             <div class="rca-flag" aria-hidden="true">
                 <span class="flag-star">★</span>
             </div>

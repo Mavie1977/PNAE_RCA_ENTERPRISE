@@ -45,11 +45,16 @@ class OfficialDocumentService
             ) {
                 $verificationToken = (string) Str::uuid();
                 $officialNumber = $this->generateOfficialNumber();
-                $signatureCode = $this->generateSignatureCode(
-                    $application,
-                    $officialNumber,
-                    $verificationToken
-                );
+				$issuedAt = now()->startOfSecond();
+                $signatureCode = app(
+                       \App\Services\OfficialDocumentSignatureService::class
+                     )->sign(
+                     (int) $application->id,
+                  (string) $application->reference,
+                           $officialNumber,
+                           $verificationToken,
+                           $issuedAt
+                      );
 $documentFingerprint = hash(
     'sha256',
     implode('|', [
@@ -59,7 +64,7 @@ $documentFingerprint = hash(
         $application->procedure_id,
         $officialNumber,
         $verificationToken,
-        now()->toIso8601String(),
+        $issuedAt->format('Y-m-d H:i:s'),
     ])
 );
                 $officialDocument = OfficialDocument::create([
@@ -73,17 +78,25 @@ $documentFingerprint = hash(
                     'mime_type' => 'application/pdf',
                     'hash_sha256' => $documentFingerprint,
                     'signature_code' => $signatureCode,
+                    'signature_version' => \App\Services\OfficialDocumentSignatureService::VERSION,
                     'status' => 'actif',
-                    'issued_at' => now(),
+                    'issued_at' => $issuedAt,
                 ]);
 
-                $verificationUrl = URL::signedRoute(
-                    'verification.documents.show',
-                    [
-                        'officialDocument' => $officialDocument,
-                        'token' => $verificationToken,
-                    ]
-                );
+                $verificationPath = URL::signedRoute(
+                  'verification.documents.show',
+                  [
+                     'officialDocument' => $officialDocument,
+                     'token' => $verificationToken,
+                  ],
+                     null,
+                    false
+            );
+
+$verificationUrl = rtrim(
+    config('app.url'),
+    '/'
+) . $verificationPath;
 
                 $qrCodeDataUri = $this->generateQrCode(
                     $verificationUrl
@@ -144,10 +157,17 @@ if (file_exists($logoPath)) {
 
                 $storedPath = $directory . '/' . $filename;
 
-                Storage::disk('local')->put(
-                    $storedPath,
-                    $pdfBinary
-                );
+                $uploaded = Storage::disk('r2_documents')->put(
+                            $storedPath,
+                            $pdfBinary
+                       );
+
+if ($uploaded !== true) {
+    throw new \RuntimeException(
+        'Échec de l’enregistrement du PDF dans Cloudflare R2.'
+    );
+}
+                
 
                 $fileHash = hash('sha256', $pdfBinary);
                 $officialDocument->update([
@@ -173,15 +193,26 @@ if (file_exists($logoPath)) {
                     'generator',
                 ]);
             });
-        } catch (Throwable $exception) {
-            if ($storedPath) {
-                Storage::disk('local')->delete($storedPath);
-            }
-
-            throw $exception;
+        } 
+		catch (Throwable $exception) 
+		{
+    if ($storedPath) {
+        try {
+            Storage::disk('r2_documents')->delete($storedPath);
+        } catch (Throwable $cleanupException) {
+            \Illuminate\Support\Facades\Log::warning(
+                'Échec du nettoyage du document R2',
+                [
+                    'path' => $storedPath,
+                    'error' => $cleanupException->getMessage(),
+                ]
+            );
         }
     }
 
+    throw $exception;
+}
+}
     private function validateApplication(
         Application $application
     ): void {

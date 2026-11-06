@@ -9,6 +9,7 @@ use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Services\UserManagementService;
+use Illuminate\Support\Facades\DB;
 
 class AgentController extends Controller
 {
@@ -52,17 +53,24 @@ public function dashboard()
         return view('agent.applications.index', compact('applications'));
     }
 
-    public function show(Application $application)
-    {
-        $application->load([
-            'user',
-            'procedure.ministry',
-            'documents',
-            'workflowLogs.user',
-        ]);
+    public function show(User $user)
+{
+    abort_unless(
+        in_array($user->role, ['agent', 'responsable'], true),
+        404
+    );
 
-        return view('agent.applications.show', compact('application'));
-    }
+    $user->load('ministry');
+
+    $applications = Application::query()
+        ->with(['user', 'procedure'])
+        ->where('assigned_to', $user->id)
+        ->latest()
+        ->take(10)
+        ->get();
+
+    return view('admin.agents.show', compact('user', 'applications'));
+}
  public function updateStatus(Request $request, Application $application)
     {
         $request->validate([
@@ -120,11 +128,17 @@ public function dashboard()
             'min:8',
             'confirmed',
         ],
+        'ministry_id' => [
+        'required',
+        'integer',
+        'exists:ministries,id',
+       ],
 
-        'role' => [
-            'nullable',
-            'in:agent,responsable',
-        ],
+       'role' => [
+       'required',
+       'in:agent,responsable',
+      ],
+
     ]);
 
     $userManagementService->createAgent($validated);

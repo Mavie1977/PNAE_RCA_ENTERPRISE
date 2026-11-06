@@ -4,12 +4,30 @@ namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $baseQuery = Application::query();
+        $agent = $request->user();
+
+        abort_unless(
+            $agent
+            && $agent->role === 'agent'
+            && $agent->active
+            && $agent->ministry_id !== null,
+            403,
+            'Accès non autorisé.'
+        );
+
+        // Un agent ne voit que ses propres dossiers,
+        // appartenant à son ministère.
+        $baseQuery = Application::query()
+            ->where('assigned_to', $agent->id)
+            ->whereHas('procedure', function ($query) use ($agent) {
+                $query->where('ministry_id', $agent->ministry_id);
+            });
 
         $total = (clone $baseQuery)->count();
 
@@ -18,8 +36,8 @@ class DashboardController extends Controller
             ->count();
 
         $traitement = (clone $baseQuery)
-            ->where('status', 'en_traitement')
-            ->count();
+           ->where('status', 'en_traitement')
+           ->count();
 
         $validee = (clone $baseQuery)
             ->where('status', 'validee')
@@ -33,13 +51,14 @@ class DashboardController extends Controller
             ->where('status', 'terminee')
             ->count();
 
-        $applications = Application::with([
-            'user',
-            'procedure.ministry',
-            'documents',
-        ])
+        $applications = (clone $baseQuery)
+            ->with([
+                'user',
+                'procedure.ministry',
+                'documents',
+            ])
             ->latest()
-            ->take(10)
+            ->limit(10)
             ->get();
 
         return view('agent.dashboard', compact(
