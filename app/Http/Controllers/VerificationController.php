@@ -120,24 +120,25 @@ if (
 }
 
 
-        $signatureValid = null;
+       $signatureVersion = $officialDocument->signature_version;
 
-        if (
-            $signatureVersion ===
-            OfficialDocumentSignatureService::VERSION
-        ) {
-            try {
-                $signatureValid = app(
-                    OfficialDocumentSignatureService::class
-                )->verify($officialDocument);
-            } catch (Throwable $exception) {
-                report($exception);
-                $signatureValid = false;
-            }
-        } elseif ($signatureVersion !== null) {
-            $signatureValid = false;
-        }
+$signatureValid = null;
 
+if (
+    $signatureVersion ===
+    OfficialDocumentSignatureService::VERSION
+) {
+    try {
+        $signatureValid = app(
+            OfficialDocumentSignatureService::class
+        )->verify($officialDocument);
+    } catch (Throwable $exception) {
+        report($exception);
+        $signatureValid = false;
+    }
+} elseif ($signatureVersion !== null) {
+    $signatureValid = false;
+}
         $documentAuthentic =
             $officialDocument->isActive()
             && $fileExists
