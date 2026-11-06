@@ -83,13 +83,20 @@ $documentFingerprint = hash(
                     'issued_at' => $issuedAt,
                 ]);
 
-                $verificationUrl = URL::signedRoute(
-                    'verification.documents.show',
-                    [
-                        'officialDocument' => $officialDocument,
-                        'token' => $verificationToken,
-                    ]
-                );
+                $verificationPath = URL::signedRoute(
+                  'verification.documents.show',
+                  [
+                     'officialDocument' => $officialDocument,
+                     'token' => $verificationToken,
+                  ],
+                     null,
+                    false
+            );
+
+$verificationUrl = rtrim(
+    config('app.url'),
+    '/'
+) . $verificationPath;
 
                 $qrCodeDataUri = $this->generateQrCode(
                     $verificationUrl

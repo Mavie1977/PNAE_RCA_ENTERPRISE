@@ -51,7 +51,7 @@ class VerificationController extends Controller
         OfficialDocument $officialDocument
     ) {
         abort_unless(
-            $request->hasValidSignature(),
+            $request->hasValidSignature(false),
             403,
             'Lien de vérification invalide.'
         );

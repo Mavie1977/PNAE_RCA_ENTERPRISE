@@ -207,7 +207,7 @@ Route::get(
     '/verification/document/{officialDocument}',
     [VerificationController::class, 'show']
 )
-    ->middleware('signed')
+    ->middleware('signed:relative')
     ->name('verification.documents.show');
 
 
