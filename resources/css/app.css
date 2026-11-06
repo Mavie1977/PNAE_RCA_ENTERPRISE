@@ -6315,3 +6315,186 @@ a.executive-stat-card:hover {
         grid-template-columns: 1fr;
     }
 }
+/* =====================================================
+   PNAE-RCA V10 — CORRECTION RESPONSIVE
+   Navigation publique et vérification documentaire
+   ===================================================== */
+
+.pnae-mobile-toggle {
+    display: none;
+}
+
+@media (max-width: 900px) {
+
+    .topbar {
+        position: relative;
+        z-index: 100;
+        height: auto;
+        min-height: 72px;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: nowrap;
+    }
+
+    .topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        flex: 1 1 auto;
+        color: #ffffff;
+        text-decoration: none;
+    }
+
+    .topbar .brand strong {
+        display: block;
+        font-size: 19px;
+        line-height: 1.2;
+    }
+
+    .topbar .brand span {
+        display: block;
+        font-size: 11px;
+        line-height: 1.3;
+    }
+
+    .pnae-mobile-toggle {
+        display: flex;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,.55);
+        border-radius: 9px;
+        background: transparent;
+        color: #ffffff;
+        font-size: 25px;
+        cursor: pointer;
+    }
+
+    .pnae-mobile-toggle:focus-visible {
+        outline: 3px solid #ffcd00;
+        outline-offset: 3px;
+    }
+
+    .topbar .main-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 110;
+        padding: 16px;
+        background: #003082;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 8px;
+        box-shadow: 0 12px 22px rgba(0,0,0,.18);
+    }
+
+    .topbar .main-nav.is-open {
+        display: flex;
+    }
+
+    .topbar .main-nav > a {
+        display: flex;
+        width: 100%;
+        min-height: 44px;
+        margin: 0;
+        padding: 12px 14px;
+        align-items: center;
+        justify-content: flex-start;
+        font-size: 14px;
+        white-space: normal;
+        border-radius: 7px;
+    }
+
+    .topbar .main-nav > a.account-btn,
+    .topbar .main-nav > a:last-child.account-btn {
+        background: #ffcd00;
+        color: #071739 !important;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .topbar .main-nav .connected-user-box {
+        display: block;
+        width: 100%;
+        max-width: none;
+    }
+
+    .topbar .main-nav .logout-form {
+        width: 100%;
+    }
+
+    .topbar .main-nav .logout-button {
+        width: 100%;
+    }
+}
+
+/* Vérification documentaire sur téléphone */
+
+@media (max-width: 620px) {
+
+    .verification-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 16px;
+        margin: 0 auto;
+        border-radius: 12px;
+        box-sizing: border-box;
+    }
+
+    .verification-result {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .verification-result > span {
+        flex: 0 0 auto;
+        font-size: 25px;
+    }
+
+    .verification-result h2 {
+        font-size: 21px;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    .verification-result p {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .verification-details > div {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 13px 0;
+    }
+
+    .verification-details dt {
+        font-size: 13px;
+    }
+
+    .verification-details dd {
+        font-size: 15px;
+        text-align: left;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .verification-search-card {
+        width: 100%;
+        padding: 16px;
+    }
+}

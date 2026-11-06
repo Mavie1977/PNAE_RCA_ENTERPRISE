@@ -19,8 +19,22 @@
             <span>République Centrafricaine</span>
         </div>
     </a>
-
-    <nav class="main-nav">
+<button
+    type="button"
+    class="pnae-mobile-toggle"
+    aria-label="Ouvrir le menu de navigation"
+    aria-controls="pnae-main-nav"
+    aria-expanded="false"
+    onclick="
+        const menu = document.getElementById('pnae-main-nav');
+        const opened = menu.classList.toggle('is-open');
+        this.setAttribute('aria-expanded', opened ? 'true' : 'false');
+        this.setAttribute('aria-label', opened ? 'Fermer le menu' : 'Ouvrir le menu de navigation');
+    "
+>
+    <span aria-hidden="true">☰</span>
+</button>
+    <nav class="main-nav" id="pnae-main-nav" aria-label="Navigation principale">
         <a href="{{ route('home') }}">Accueil</a>
         <a href="{{ route('services') }}">Services</a>
         <a href="#">Le PNAE</a>
