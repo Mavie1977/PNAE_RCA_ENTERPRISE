@@ -1125,4 +1125,5 @@ $signatureValid = $doc
 
     'document_signature_valid' => $signatureValid,
 ])->header('Cache-Control', 'no-store');
+
 });
