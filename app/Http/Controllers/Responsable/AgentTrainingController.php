@@ -141,9 +141,15 @@ class AgentTrainingController extends Controller
             $file = $request->file('certificate');
 
             $path = $file->store(
-                'rh-trainings/' . $agent->id,
-                'local'
-            );
+    'rh-trainings/' . $agent->id,
+    'r2_documents'
+);
+
+if ($path === false) {
+    throw new \RuntimeException(
+        'Impossible d’enregistrer le certificat sur Cloudflare R2.'
+    );
+}
 
             $originalName = $file->getClientOriginalName();
             $mimeType = $file->getMimeType();
@@ -221,25 +227,29 @@ class AgentTrainingController extends Controller
     }
 
     public function downloadCertificate(
-        User $agent,
-        AgentTraining $training
-    ): StreamedResponse {
-        abort_unless(
-            $training->agent_id === $agent->id,
-            404
-        );
+    User $agent,
+    AgentTraining $training
+): StreamedResponse {
 
-        abort_unless(
-            $training->certificate_file_path
-            && Storage::disk('local')
-                ->exists($training->certificate_file_path),
-            404
-        );
+    abort_unless(
+        $training->agent_id === $agent->id,
+        404
+    );
 
-        return Storage::disk('local')->download(
-            $training->certificate_file_path,
-            $training->certificate_original_name
-                ?: 'certificat'
-        );
-    }
+    $disk = Storage::disk('r2_documents');
+
+    abort_unless(
+        is_string($training->certificate_file_path)
+            && $training->certificate_file_path !== ''
+            && $disk->exists($training->certificate_file_path),
+        404,
+        'Le certificat de formation est introuvable.'
+    );
+
+    return $disk->download(
+        $training->certificate_file_path,
+        $training->certificate_original_name
+            ?: 'certificat.pdf'
+    );
+}
 }

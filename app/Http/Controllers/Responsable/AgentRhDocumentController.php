@@ -92,9 +92,15 @@ class AgentRhDocumentController extends Controller
         $file = $request->file('file');
 
         $path = $file->store(
-            'rh-documents/' . $agent->id,
-            'local'
-        );
+    'rh-documents/' . $agent->id,
+    'r2_documents'
+);
+
+if ($path === false) {
+    throw new \RuntimeException(
+        'Impossible d’enregistrer le document RH sur Cloudflare R2.'
+    );
+}
 
         $document = AgentRhDocument::create([
             'agent_id' => $agent->id,
@@ -179,26 +185,31 @@ AgentCareerHistory::create([
                 'Le document RH a été ajouté au dossier de l’agent.'
             );
     }
-
     public function download(
-        User $agent,
-        AgentRhDocument $document
-    ): StreamedResponse {
-        abort_unless(
-            $document->agent_id === $agent->id,
-            404
-        );
+    User $agent,
+    AgentRhDocument $document
+): StreamedResponse {
 
-        abort_unless(
-            Storage::disk('local')->exists($document->file_path),
-            404
-        );
+    abort_unless(
+        $document->agent_id === $agent->id,
+        404
+    );
 
-        return Storage::disk('local')->download(
-            $document->file_path,
-            $document->original_name
-        );
-    }
+    $disk = Storage::disk('r2_documents');
+
+    abort_unless(
+        is_string($document->file_path)
+            && $document->file_path !== ''
+            && $disk->exists($document->file_path),
+        404,
+        'Le document RH est introuvable.'
+    );
+
+    return $disk->download(
+        $document->file_path,
+        $document->original_name
+    );
+}
 
     public function archive(
     Request $request,
