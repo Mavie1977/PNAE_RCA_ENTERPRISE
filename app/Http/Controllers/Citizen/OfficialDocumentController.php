@@ -32,7 +32,7 @@ class OfficialDocumentController extends Controller
             'Ce document officiel n’est plus valide.'
         );
 
-        $disk = Storage::disk('local');
+        $disk = Storage::disk('r2_documents');
         $path = $officialDocument->file_path;
 
         abort_unless(
