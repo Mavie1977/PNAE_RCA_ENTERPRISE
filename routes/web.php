@@ -1070,6 +1070,8 @@ Route::get('/diagnostic-r2-preview', function () {
             'uploaded' => $uploaded,
             'exists' => $exists,
             'success' => $uploaded === true && $exists === true,
+			'document_found' => $doc !== null,
+            'document_signature_valid' => $signatureValid,
         ]);
     } catch (\Throwable $exception) {
         \Illuminate\Support\Facades\Log::error(
@@ -1093,6 +1095,13 @@ Route::get('/admin/diagnostic-hmac-preview', function () {
     );
 
     $key = config('pnae.document.hmac_key');
+	
+	$doc = \App\Models\OfficialDocument::find(6);
+
+$signatureValid = $doc
+    ? app(\App\Services\OfficialDocumentSignatureService::class)
+        ->verify($doc)
+    : null;
 
     return response()->json([
         'environment' => app()->environment(),
