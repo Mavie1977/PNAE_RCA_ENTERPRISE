@@ -75,22 +75,26 @@ class VerificationController extends Controller
             'application.procedure.ministry',
         ]);
 
-        $fileExists = false;
-        $hashValid = false;
+        
+$fileExists = false;
+$hashValid = false;
 
-        $path = $officialDocument->file_path;
+$path = $officialDocument->file_path;
 
-        if (
-            is_string($path)
-            && $path !== ''
-            && $path !== 'pending'
-            && Storage::disk('local')->exists($path)
-        ) {
+if (
+    is_string($path)
+    && $path !== ''
+    && $path !== 'pending'
+) {
+    try {
+        $disk = Storage::disk('r2_documents');
+
+        if ($disk->exists($path)) {
             $fileExists = true;
 
-            $stream = Storage::disk('local')->readStream($path);
+            $stream = $disk->readStream($path);
 
-            if ($stream !== false) {
+            if (is_resource($stream)) {
                 try {
                     $context = hash_init('sha256');
                     hash_update_stream($context, $stream);
@@ -107,8 +111,14 @@ class VerificationController extends Controller
                 }
             }
         }
+    } catch (Throwable $exception) {
+        report($exception);
 
-        $signatureVersion = $officialDocument->signature_version;
+        $fileExists = false;
+        $hashValid = false;
+    }
+}
+
 
         $signatureValid = null;
 
