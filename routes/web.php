@@ -1084,3 +1084,22 @@ Route::get('/diagnostic-r2-preview', function () {
         ], 500);
     }
 })->middleware(['auth', 'role:admin']);
+Route::get('/admin/diagnostic-hmac-preview', function () {
+    abort_unless(app()->environment('preview'), 404);
+
+    abort_unless(
+        auth()->check() && auth()->user()->role === 'admin',
+        403
+    );
+
+    $key = config('pnae.document.hmac_key');
+
+    return response()->json([
+        'environment' => app()->environment(),
+        'key_configured' => is_string($key) && strlen($key) >= 32,
+        'key_length' => is_string($key) ? strlen($key) : 0,
+        'key_fingerprint' => is_string($key)
+            ? hash('sha256', $key)
+            : null,
+    ])->header('Cache-Control', 'no-store');
+});
