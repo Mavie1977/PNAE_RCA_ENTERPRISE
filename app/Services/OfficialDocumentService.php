@@ -167,7 +167,7 @@ if ($uploaded !== true) {
         'Échec de l’enregistrement du PDF dans Cloudflare R2.'
     );
 }
-                
+
 
                 $fileHash = hash('sha256', $pdfBinary);
                 $officialDocument->update([
@@ -193,8 +193,8 @@ if ($uploaded !== true) {
                     'generator',
                 ]);
             });
-        } 
-		catch (Throwable $exception) 
+        }
+		catch (Throwable $exception)
 		{
     if ($storedPath) {
         try {
@@ -227,7 +227,7 @@ if ($uploaded !== true) {
             ]);
         }
 
-        
+
 
 $invalidDocuments = $application->documents
     ->filter(

@@ -75,7 +75,7 @@ class VerificationController extends Controller
             'application.procedure.ministry',
         ]);
 
-        
+
 $fileExists = false;
 $hashValid = false;
 
