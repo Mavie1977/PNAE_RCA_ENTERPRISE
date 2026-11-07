@@ -65,6 +65,24 @@ $agents = $query
         $agent->role === User::ROLE_AGENT,
         404
     );
+
+	    $responsable = auth()->user();
+
+    abort_unless(
+        $responsable !== null
+            && $responsable->role === User::ROLE_RESPONSABLE
+            && $responsable->active
+            && $responsable->ministry_id !== null,
+        403,
+        'Accès non autorisé au dossier RH.'
+    );
+
+    abort_unless(
+        $responsable->isResponsableFonctionPublique()
+            || (int) $agent->ministry_id === (int) $responsable->ministry_id,
+        403,
+        'Vous ne pouvez pas consulter le dossier RH de cet agent.'
+    );
 /*
     |--------------------------------------------------------------------------
     | Sécurité

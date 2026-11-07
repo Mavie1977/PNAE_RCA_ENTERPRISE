@@ -3,148 +3,88 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\ApplicationDecisionProposal;
+use App\Notifications\ApplicationStatusChangedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Notifications\ApplicationStatusChangedNotification;
 
 class WorkflowService
 {
-    /**
-     * Transitions autorisées entre les statuts.
-     */
     private array $transitions = [
-        'soumise' => [
-            'en_traitement',
-            'rejetee',
-        ],
-
-        'en_traitement' => [
-            'validee',
-            'rejetee',
-        ],
-
-        'validee' => [
-            'terminee',
-            'en_traitement',
-        ],
-
-        'rejetee' => [
-            'en_traitement',
-        ],
-
-        /*
-         * Réouverture autorisée pour les dossiers terminés.
-         */
-        'terminee' => [
-            'en_traitement',
-        ],
+        'soumise' => ['en_traitement', 'rejetee'],
+        'en_traitement' => ['validee', 'rejetee'],
+        'validee' => ['terminee', 'en_traitement'],
+        'rejetee' => ['en_traitement'],
+        'terminee' => ['en_traitement'],
     ];
 
-    public function changeStatus(
-        Application $application,
-        string $newStatus,
-        ?string $comment = null
-    ): Application {
-        $oldStatus = $application->status;
+    public function changeStatus(Application $application, string $newStatus, ?string $comment = null, ?int $approvedProposalId = null): Application
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->role === 'responsable' && $user->active && $user->ministry_id !== null, 403);
 
-        if ($oldStatus === $newStatus) {
-            throw ValidationException::withMessages([
-                'status' => 'Le dossier possède déjà ce statut.',
-            ]);
-        }
-
-        if (! $this->canTransition($oldStatus, $newStatus)) {
-            throw ValidationException::withMessages([
-                'status' => sprintf(
-                    'Le passage du statut « %s » vers « %s » n’est pas autorisé.',
-                    $this->label($oldStatus),
-                    $this->label($newStatus)
-                ),
-            ]);
-        }
-
-        return DB::transaction(function () use (
-            $application,
-            $oldStatus,
-            $newStatus,
-            $comment
-        ) {
-            $oldStatus = $application->status;
-
-$application->update([
-    'status' => $newStatus,
-    'agent_comment' => $comment,
-]);
-
-$application->loadMissing('user');
-
-if ($application->user) {
-    $application->user->notify(
-        new ApplicationStatusChangedNotification(
-            application: $application,
-            oldStatus: $oldStatus,
-            newStatus: $newStatus,
-            comment: $comment,
-        )
-    );
-}
-
-return $application->refresh();
-
+        return DB::transaction(function () use ($application, $newStatus, $comment, $user, $approvedProposalId) {
+            $locked = Application::query()->whereKey($application->id)->lockForUpdate()->firstOrFail();
+            $locked->loadMissing('procedure');
+            abort_unless($locked->procedure && (int) $locked->procedure->ministry_id === (int) $user->ministry_id, 403);
+            $oldStatus = $locked->status;
+            if (in_array($newStatus, ['validee', 'rejetee'], true)) {
+                $proposal = $approvedProposalId === null ? null : ApplicationDecisionProposal::query()
+                    ->whereKey($approvedProposalId)
+                    ->where('application_id', $locked->id)
+                    ->where('agent_id', $locked->assigned_to)
+                    ->where('proposed_status', $newStatus)
+                    ->where('status', 'approved')
+                    ->where('reviewed_by', $user->id)
+                    ->first();
+                if (! $proposal) {
+                    throw ValidationException::withMessages(['status' => 'Décision finale sans proposition approuvée interdite.']);
+                }
+            }
+            if (! $this->canTransition($oldStatus, $newStatus)) {
+                throw ValidationException::withMessages(['status' => 'Transition de statut interdite.']);
+            }
+            $locked->update(['status' => $newStatus, 'decision_note' => $comment]);
             DB::table('workflow_logs')->insert([
-                'application_id' => $application->id,
-                'user_id' => auth()->id(),
+                'application_id' => $locked->id,
+                'user_id' => $user->id,
                 'from_status' => $oldStatus,
                 'to_status' => $newStatus,
                 'comment' => $comment,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
-            AuditService::log(
-                'Changement de statut',
-                'Demande',
-                $application->id,
-                [
-                    'reference' => $application->reference,
-                    'ancien_statut' => $oldStatus,
-                    'nouveau_statut' => $newStatus,
-                    'commentaire' => $comment,
-                ]
-            );
-
-            return $application->fresh([
-                'user',
-                'procedure.ministry',
-                'documents',
-                'workflowLogs.user',
+            AuditService::log('Changement de statut', 'Demande', $locked->id, [
+                'reference' => $locked->reference,
+                'ancien_statut' => $oldStatus,
+                'nouveau_statut' => $newStatus,
+                'commentaire' => $comment,
             ]);
-        });
+            $applicationId = $locked->id;
+            DB::afterCommit(function () use ($applicationId, $oldStatus, $newStatus, $comment) {
+                $notified = Application::query()->with('user')->find($applicationId);
+                if ($notified?->user) {
+                    $notified->user->notify(new ApplicationStatusChangedNotification(
+                        application: $notified,
+                        oldStatus: $oldStatus,
+                        newStatus: $newStatus,
+                        comment: $comment,
+                    ));
+                }
+            });
+            return $locked->fresh(['user', 'procedure.ministry', 'documents', 'workflowLogs.user']);
+        }, 3);
     }
 
-    public function canTransition(
-        string $oldStatus,
-        string $newStatus
-    ): bool {
-        return in_array(
-            $newStatus,
-            $this->transitions[$oldStatus] ?? [],
-            true
-        );
+    public function canTransition(string $oldStatus, string $newStatus): bool
+    {
+        return in_array($newStatus, $this->transitions[$oldStatus] ?? [], true);
     }
 
-    public function availableTransitions(
-        Application $application
-    ): array {
-        return collect(
-            $this->transitions[$application->status] ?? []
-        )
-            ->mapWithKeys(function (string $status) {
-                return [
-                    $status => $this->label($status),
-                ];
-            })
-            ->all();
+    public function availableTransitions(Application $application): array
+    {
+        return collect($this->transitions[$application->status] ?? [])
+            ->mapWithKeys(fn (string $status) => [$status => $this->label($status)])->all();
     }
 
     public function label(string $status): string

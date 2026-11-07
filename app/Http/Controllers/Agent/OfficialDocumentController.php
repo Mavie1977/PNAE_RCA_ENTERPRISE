@@ -43,7 +43,7 @@ class OfficialDocumentController extends Controller
         );
 
         abort_unless(
-            Storage::disk('local')->exists(
+            Storage::disk('r2_documents')->exists(
                 $officialDocument->file_path
             ),
             404,
@@ -65,7 +65,7 @@ class OfficialDocumentController extends Controller
             ]
         );
 
-        return Storage::disk('local')->download(
+        return Storage::disk('r2_documents')->download(
             $officialDocument->file_path,
             $officialDocument->official_number . '.pdf',
             [

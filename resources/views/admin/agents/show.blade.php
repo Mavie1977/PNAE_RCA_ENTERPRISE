@@ -17,6 +17,10 @@
             <tr><th>Nom complet</th><td>{{ $user->name }}</td></tr>
             <tr><th>Email</th><td>{{ $user->email }}</td></tr>
             <tr><th>Téléphone</th><td>{{ $user->phone ?? '-' }}</td></tr>
+<tr>
+    <th>Ministère de rattachement</th>
+    <td>{{ $user->ministry?->name ?? 'Non renseigné' }}</td>
+</tr>
             <tr><th>Rôle</th><td>{{ ucfirst($user->role) }}</td></tr>
             <tr>
                 <th>Statut</th>
@@ -28,7 +32,7 @@
                     @endif
                 </td>
             </tr>
-            <tr><th>Date création</th><td>{{ $user->created_at->format('d/m/Y H:i') }}</td></tr>
+            <tr><th>Date création</th><td>{{ $user->created_at?->format('d/m/Y H:i') ?? '-' }}</td></tr>
         </table>
 
         <form method="POST" action="{{ route('admin.agents.toggle', $user) }}" class="mt-3">
@@ -43,9 +47,9 @@
             </a>
         </form>
     </div>
-
+ @include('admin.users._reset_password', ['user' => $user])
     <div class="table-card">
-        <h2>Dossiers récents de la plateforme</h2>
+        <h2>Dossiers récemment affectés à cet agent</h2>
 
         <table class="rca-table mt-3">
             <thead>
@@ -69,7 +73,7 @@
                                 {{ ucfirst(str_replace('_', ' ', $application->status)) }}
                             </span>
                         </td>
-                        <td>{{ $application->created_at->format('d/m/Y') }}</td>
+                        <td>{{ $application->created_at?->format('d/m/Y') ?? '-' }}</td>
                     </tr>
                 @empty
                     <tr>

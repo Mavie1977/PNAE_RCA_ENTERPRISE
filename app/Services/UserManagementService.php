@@ -12,34 +12,33 @@ class UserManagementService
      * @param array<string, mixed> $data
      */
     public function createAgent(array $data): User
-    {
-        return DB::transaction(function () use ($data) {
-            $agent = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'password' => Hash::make($data['password']),
-                'role' => $data['role'] ?? 'agent',
-                'active' => true,
-                'prefecture_id' => $data['prefecture_id'] ?? null,
-                'commune_id' => $data['commune_id'] ?? null,
-            ]);
+{
+    return DB::transaction(function () use ($data) {
+        $agent = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'password' => Hash::make($data['password']),
+            'role' => $data['role'] ?? 'agent',
+            'ministry_id' => $data['ministry_id'],
+            'active' => true,
+        ]);
 
-            AuditService::log(
-                'Création',
-                'Agent',
-                $agent->id,
-                [
-                    'name' => $agent->name,
-                    'email' => $agent->email,
-                    'role' => $agent->role,
-                ]
-            );
+        AuditService::log(
+            'creation_agent_ministeriel',
+            'User',
+            $agent->id,
+            [
+                'name' => $agent->name,
+                'email' => $agent->email,
+                'role' => $agent->role,
+                'ministry_id' => $agent->ministry_id,
+            ]
+        );
 
-            return $agent;
-        });
-    }
-
+        return $agent;
+    });
+}
     public function toggleStatus(User $user): User
     {
         return DB::transaction(function () use ($user) {

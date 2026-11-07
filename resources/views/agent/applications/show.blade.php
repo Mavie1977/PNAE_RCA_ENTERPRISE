@@ -34,15 +34,79 @@
         </div>
     @endif
 
+
+{{-- Prise en charge du dossier par l'agent instructeur --}}
+@if($application->status === 'soumise')
+    <div class="card shadow-sm border-0 my-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Prise en charge du dossier</h5>
+        </div>
+
+        <div class="card-body">
+            <p>
+                Ce dossier vous a été affecté.
+                Vous pouvez commencer son instruction.
+            </p>
+
+            <form
+                method="POST"
+                action="{{ route('agent.applications.status', $application) }}"
+            >
+                @csrf
+                @method('PATCH')
+
+                <input
+                    type="hidden"
+                    name="status"
+                    value="en_traitement"
+                >
+
+                <button type="submit" class="btn btn-primary">
+                    Prendre en traitement
+                </button>
+            </form>
+        </div>
+    </div>
+@endif
+@if ($application->status === 'en_traitement')
+    <div class="card shadow-sm border-0 my-4">
+        <div class="card-header bg-primary text-white"><h5 class="mb-0">Proposer une décision</h5></div>
+        <div class="card-body">
+            @if($pendingProposal)
+                <div class="alert alert-info">Une proposition est déjà en attente d'examen par le responsable.</div>
+                <p><strong>Proposition :</strong> {{ $pendingProposal->proposed_status === 'validee' ? 'Validation' : 'Rejet' }}</p>
+                <p>{{ $pendingProposal->comment }}</p>
+            @else
+                <form method="POST" action="{{ route('agent.applications.propose', $application) }}">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label">Décision proposée</label>
+                        <select name="proposed_status" class="form-select" required>
+                            <option value="">Sélectionner</option>
+                            <option value="validee" @selected(old('proposed_status') === 'validee')>Proposer la validation</option>
+                            <option value="rejetee" @selected(old('proposed_status') === 'rejetee')>Proposer le rejet</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivation</label>
+                        <textarea name="comment" class="form-control" rows="4" maxlength="2000" required>{{ old('comment') }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Transmettre au responsable</button>
+                </form>
+            @endif
+        </div>
+    </div>
+@endif
+
 <x-panel
     title="Document officiel"
-    subtitle="Générez le document final après validation du dossier."
-    icon="📜"
+    subtitle="GÃ©nÃ©rez le document final aprÃ¨s validation du dossier."
+    icon="ðŸ“œ"
 >
     @if($application->officialDocument)
 
-        <x-alert type="success" title="Document déjà généré">
-            Numéro officiel :
+        <x-alert type="success" title="Document dÃ©jÃ  gÃ©nÃ©rÃ©">
+            NumÃ©ro officiel :
             <strong>
                 {{ $application->officialDocument->official_number }}
             </strong>
@@ -54,12 +118,12 @@
                 $application->officialDocument
             )"
             variant="success"
-            icon="⬇️"
+            icon="â¬‡ï¸"
         >
-            Télécharger le document officiel
+            TÃ©lÃ©charger le document officiel
         </x-action-button>
 
-    @else
+    @elseif(in_array($application->status, ['validee', 'terminee'], true))
 
         <form
             method="POST"
@@ -73,23 +137,24 @@
             <x-action-button
                 type="submit"
                 variant="success"
-                icon="📜"
+                icon="ðŸ“œ"
             >
-                Générer le document officiel
+                GÃ©nÃ©rer le document officiel
             </x-action-button>
         </form>
-
+    @else
+        <p>La génération du document officiel sera disponible après validation du dossier.</p>
     @endif
 </x-panel>
 
 
     <div class="dashboard-card mb-4">
-        <h2>Informations générales</h2>
+        <h2>Informations gÃ©nÃ©rales</h2>
 
         <table class="rca-table mt-3">
             <tbody>
                 <tr>
-                    <th>Référence</th>
+                    <th>RÃ©fÃ©rence</th>
                     <td>{{ $application->reference }}</td>
                 </tr>
 
@@ -104,24 +169,24 @@
                 </tr>
 
                 <tr>
-                    <th>Téléphone</th>
+                    <th>TÃ©lÃ©phone</th>
                     <td>{{ $application->user->phone ?? '-' }}</td>
                 </tr>
 
                 <tr>
-                    <th>Démarche</th>
+                    <th>DÃ©marche</th>
                     <td>{{ $application->procedure->title ?? '-' }}</td>
                 </tr>
 
                 <tr>
-                    <th>Ministère</th>
+                    <th>MinistÃ¨re</th>
                     <td>
                         {{ $application->procedure->ministry->name ?? '-' }}
                     </td>
                 </tr>
 
                 <tr>
-                    <th>Priorité</th>
+                    <th>PrioritÃ©</th>
                     <td>
                         {{ ucfirst($application->priority ?? 'normale') }}
                     </td>
@@ -151,9 +216,9 @@
                 </tr>
 
                 <tr>
-                    <th>Date de dépôt</th>
+                    <th>Date de dÃ©pÃ´t</th>
                     <td>
-                        {{ $application->created_at->format('d/m/Y H:i') }}
+                        {{ $application->created_at?->format('d/m/Y H:i') ?? 'Date non renseignée' }}
                     </td>
                 </tr>
             </tbody>
@@ -161,9 +226,9 @@
     </div>
 
    <x-panel
-    title="Contrôle des pièces jointes"
+    title="ContrÃ´le des piÃ¨ces jointes"
     subtitle="Consultez, validez ou rejetez chaque document."
-    icon="📎"
+    icon="ðŸ“Ž"
 >
     <div class="document-review-grid">
 
@@ -175,11 +240,11 @@
 
                     <div class="document-file-icon">
                         @if($document->mime_type === 'application/pdf')
-                            📄
+                            ðŸ“„
                         @elseif(str_starts_with((string) $document->mime_type, 'image/'))
-                            🖼️
+                            ðŸ–¼ï¸
                         @else
-                            📎
+                            ðŸ“Ž
                         @endif
                     </div>
 
@@ -190,7 +255,7 @@
 
                         <small>
                             {{ $document->mime_type ?? 'Type inconnu' }}
-                            —
+                            â€”
                             {{ $document->formatted_size }}
                         </small>
                     </div>
@@ -204,7 +269,7 @@
 
                 @if($document->note)
                     <div class="document-review-note">
-                        <strong>Note de contrôle :</strong>
+                        <strong>Note de contrÃ´le :</strong>
                         <p>{{ $document->note }}</p>
                     </div>
                 @endif
@@ -216,18 +281,18 @@
                         target="_blank"
                         variant="secondary"
                         size="small"
-                        icon="👁️"
+                        icon="ðŸ‘ï¸"
                     >
-                        Aperçu
+                        AperÃ§u
                     </x-action-button>
 
                     <x-action-button
                         :href="route('agent.documents.download', $document)"
                         variant="light"
                         size="small"
-                        icon="⬇️"
+                        icon="â¬‡ï¸"
                     >
-                        Télécharger
+                        TÃ©lÃ©charger
                     </x-action-button>
 
                 </div>
@@ -245,7 +310,7 @@
 
                         <div class="form-group">
                             <label for="document-status-{{ $document->id }}">
-                                Décision documentaire
+                                DÃ©cision documentaire
                             </label>
 
                             <select
@@ -264,21 +329,21 @@
                                     value="recu"
                                     @selected(old('status', $document->status) === 'recu')
                                 >
-                                    Reçu
+                                    ReÃ§u
                                 </option>
 
                                 <option
                                     value="valide"
                                     @selected(old('status', $document->status) === 'valide')
                                 >
-                                    Validé
+                                    ValidÃ©
                                 </option>
 
                                 <option
                                     value="rejete"
                                     @selected(old('status', $document->status) === 'rejete')
                                 >
-                                    Rejeté
+                                    RejetÃ©
                                 </option>
                             </select>
                         </div>
@@ -303,7 +368,7 @@
                             type="submit"
                             class="component-action-button button-success button-small"
                         >
-                            💾 Enregistrer le contrôle du document
+                            ðŸ’¾ Enregistrer le contrÃ´le du document
                         </button>
                     </div>
 
@@ -314,9 +379,9 @@
         @empty
 
             <x-empty-state
-                icon="📭"
-                title="Aucune pièce jointe"
-                message="Le citoyen n’a joint aucun document à cette demande."
+                icon="ðŸ“­"
+                title="Aucune piÃ¨ce jointe"
+                message="Le citoyen nâ€™a joint aucun document Ã  cette demande."
             />
 
         @endforelse
@@ -324,99 +389,10 @@
     </div>
 </x-panel>
 
-    <div class="form-card mb-4">
-
-    <div class="form-header">
-        <h2>Traitement administratif</h2>
-
-        <p>
-            Modifiez le statut général du dossier et ajoutez un commentaire.
-        </p>
+    <div class="mb-4">
+        <p class="text-muted">La décision finale appartient au responsable ministériel.</p>
+        <a href="{{ route('agent.applications') }}" class="btn-rca-secondary">Retour à la liste</a>
     </div>
-
-    {{-- FORMULAIRE DU DOSSIER UNIQUEMENT --}}
-    <form
-        method="POST"
-        action="{{ route('agent.applications.status', $application) }}"
-    >
-        @csrf
-        @method('PATCH')
-
-        <div class="form-grid">
-
-            <div class="form-group">
-                <label for="application-status">
-                    Nouveau statut du dossier
-                </label>
-
-                @if(!empty($availableTransitions))
-
-                    <select
-                        id="application-status"
-                        name="status"
-                        required
-                    >
-                        <option value="">
-                            Sélectionner le nouveau statut
-                        </option>
-
-                        @foreach($availableTransitions as $status => $label)
-                            <option
-                                value="{{ $status }}"
-                                @selected(old('status') === $status)
-                            >
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-
-                @else
-
-                    <div class="workflow-closed-message">
-                        <strong>Dossier terminé</strong>
-
-                        <span>
-                            Aucune nouvelle transition n’est disponible.
-                        </span>
-                    </div>
-
-                @endif
-            </div>
-
-            <div class="form-group">
-                <label for="application-comment">
-                    Commentaire agent
-                </label>
-
-                <textarea
-                    id="application-comment"
-                    name="comment"
-                    rows="5"
-                    placeholder="Précisez la décision ou les pièces manquantes..."
-                >{{ old('comment') }}</textarea>
-            </div>
-
-        </div>
-
-        <div class="form-actions">
-
-            @if(!empty($availableTransitions))
-                <button type="submit" class="btn-rca-primary">
-                    Enregistrer le traitement du dossier
-                </button>
-            @endif
-
-            <a
-                href="{{ route('agent.applications') }}"
-                class="btn-rca-secondary"
-            >
-                Retour à la liste
-            </a>
-
-        </div>
-
-    </form>
-</div>
 
     <div class="table-card">
         <h2>Historique du dossier</h2>

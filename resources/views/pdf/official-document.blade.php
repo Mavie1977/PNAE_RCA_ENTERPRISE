@@ -526,13 +526,13 @@
         </div>
 
         <div class="security-row">
-            <span class="security-label">
-                Empreinte numérique SHA-256 :
-            </span>
+           <span class="security-label">
+              Empreinte SHA-256 des données certifiées :
+           </span>
 
-            <span class="security-value">
-                {{ $officialDocument->hash_sha256 }}
-            </span>
+          <span class="security-value">
+          {{ $officialDocument->hash_sha256 }}
+        </span>
         </div>
 
         <div class="security-row">

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Services\AuditService;
+use Illuminate\Support\Facades\Log;
 class AuthController extends Controller
 {
     public function showLogin()
@@ -52,6 +53,7 @@ class AuthController extends Controller
 }
     public function login(Request $request)
 {
+Log::channel('stderr')->info('PNAE LOGIN 01 : entrée dans le contrôleur');
     $validated = $request->validate([
         'email' => [
             'required',
@@ -73,7 +75,7 @@ class AuthController extends Controller
         $email,
         $request->ip()
     );
-
+Log::channel('stderr')->info('PNAE LOGIN 02 : validation terminée');
     if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
         $seconds = RateLimiter::availableIn($rateLimitKey);
 
@@ -96,7 +98,7 @@ class AuthController extends Controller
                 ),
             ]);
     }
-
+Log::channel('stderr')->info('PNAE LOGIN 03 : limiteur vérifié');
     $user = User::query()
         ->where('email', $email)
         ->first();
@@ -136,7 +138,7 @@ class AuthController extends Controller
                     'Identifiants incorrects, compte désactivé ou accès refusé.',
             ]);
     }
-
+Log::channel('stderr')->info('PNAE LOGIN 04 : authentification réussie');
     RateLimiter::clear($rateLimitKey);
 
     $request->session()->regenerate();
@@ -150,7 +152,7 @@ class AuthController extends Controller
         'successful' => true,
         'occurred_at' => now(),
     ]);
-
+Log::channel('stderr')->info('PNAE LOGIN 05 : audit et session terminés');
     return $this->redirectAuthenticatedUser();
 }
 

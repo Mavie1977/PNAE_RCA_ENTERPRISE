@@ -207,7 +207,7 @@ Route::get(
     '/verification/document/{officialDocument}',
     [VerificationController::class, 'show']
 )
-    ->middleware('signed')
+    ->middleware('signed:relative')
     ->name('verification.documents.show');
 
 
@@ -416,7 +416,13 @@ Route::prefix('agent')
         | Traitement des demandes
         |--------------------------------------------------------------------------
         */
-
+        Route::post(
+            '/demandes/{application}/proposition',
+           [
+             \App\Http\Controllers\Agent\ApplicationController::class,
+            'proposeDecision',
+           ]
+       )->name('applications.propose');
         Route::get(
             '/demandes',
             [AgentApplicationController::class, 'index']
@@ -435,6 +441,7 @@ Route::prefix('agent')
             '/demandes/{application}/statut',
             [AgentApplicationController::class, 'updateStatus']
         )->name('applications.status');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -597,6 +604,24 @@ Route::patch(
     '/agents/{agent}/conges/{leave}/refuser',
     [AgentLeaveController::class, 'reject']
 )->name('agents.leaves.reject');
+
+Route::get(
+    '/demandes',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'index']
+)->name('applications.index');
+
+Route::get(
+    '/demandes/{application}',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'show']
+)->name('applications.show');
+
+Route::patch(
+    '/demandes/{application}/affecter',
+    [\App\Http\Controllers\Responsable\ApplicationController::class, 'assign']
+)->name('applications.assign');
+
+Route::post('/demandes/{application}/decision', [\App\Http\Controllers\Responsable\ApplicationController::class, 'decide'])->name('applications.decide');
+
         /*
         |--------------------------------------------------------------------------
         | Tableau de bord responsable
@@ -622,6 +647,7 @@ Route::patch(
            '/agents/{agent}/dossier-rh',
            [ResponsableAgentController::class, 'show']
        )->name('agents.show');
+
         /*
         |--------------------------------------------------------------------------
         | Cycle de gestion des agents publics
@@ -634,15 +660,20 @@ Route::patch(
         | ministère ayant le code "FONCTION_PUBLIQUE".
         |
         */
-		Route::get(
-              '/agents/{agent}/avancement',
-              [AgentAdvancementController::class, 'create']
-              )->name('agents.advancement.create');
+		Route::middleware('responsable.fp')
+    ->group(function (): void {
 
-         Route::post(
-               '/agents/{agent}/avancement',
-                [AgentAdvancementController::class, 'store']
-               )->name('agents.advancement.store');
+        Route::get(
+            '/agents/{agent}/avancement',
+            [AgentAdvancementController::class, 'create']
+        )->name('agents.advancement.create');
+
+        Route::post(
+            '/agents/{agent}/avancement',
+            [AgentAdvancementController::class, 'store']
+        )->name('agents.advancement.store');
+
+    });
 
         Route::prefix('recrutement')
             ->name('recruitment.')
@@ -1014,3 +1045,49 @@ Route::prefix('admin')
             [SystemHealthController::class, 'index']
         )->name('system-health.index');
     });
+// DIAGNOSTIC TEMPORAIRE R2 — PREVIEW UNIQUEMENT
+Route::get('/diagnostic-r2-preview', function () {
+    abort_unless(
+        app()->environment('preview'),
+        404
+    );
+
+    abort_unless(
+        auth()->check() && auth()->user()->role === 'admin',
+        403
+    );
+
+    $disk = \Illuminate\Support\Facades\Storage::disk('r2_documents');
+    $path = 'tests/diagnostic-vercel-' . \Illuminate\Support\Str::uuid() . '.txt';
+
+    try {
+        $uploaded = $disk->put($path, 'Diagnostic R2 PNAE-RCA Preview');
+
+        $exists = $disk->exists($path);
+
+        if ($exists) {
+            $disk->delete($path);
+        }
+
+        return response()->json([
+            'environment' => app()->environment(),
+            'bucket' => config('filesystems.disks.r2_documents.bucket'),
+            'uploaded' => $uploaded,
+            'exists' => $exists,
+            'success' => $uploaded === true && $exists === true,
+			'document_found' => $doc !== null,
+            'document_signature_valid' => $signatureValid,
+        ]);
+    } catch (\Throwable $exception) {
+        \Illuminate\Support\Facades\Log::error(
+            'Diagnostic R2 Preview',
+            ['exception' => $exception]
+        );
+
+        return response()->json([
+            'success' => false,
+            'error_type' => get_class($exception),
+            'message' => 'Échec du diagnostic R2. Consulter les logs Vercel.',
+        ], 500);
+    }
+})->middleware(['auth', 'role:admin']);

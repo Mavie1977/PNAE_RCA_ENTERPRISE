@@ -42,7 +42,7 @@
             </a>
         </form>
     </div>
-
+@include('admin.users._reset_password', ['user' => $user])
     <div class="table-card">
         <h2>Demandes du citoyen</h2>
 
