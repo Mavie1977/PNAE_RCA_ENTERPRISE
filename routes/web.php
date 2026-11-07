@@ -660,15 +660,20 @@ Route::post('/demandes/{application}/decision', [\App\Http\Controllers\Responsab
         | ministère ayant le code "FONCTION_PUBLIQUE".
         |
         */
-		Route::get(
-              '/agents/{agent}/avancement',
-              [AgentAdvancementController::class, 'create']
-              )->name('agents.advancement.create');
+		Route::middleware('responsable.fp')
+    ->group(function (): void {
 
-         Route::post(
-               '/agents/{agent}/avancement',
-                [AgentAdvancementController::class, 'store']
-               )->name('agents.advancement.store');
+        Route::get(
+            '/agents/{agent}/avancement',
+            [AgentAdvancementController::class, 'create']
+        )->name('agents.advancement.create');
+
+        Route::post(
+            '/agents/{agent}/avancement',
+            [AgentAdvancementController::class, 'store']
+        )->name('agents.advancement.store');
+
+    });
 
         Route::prefix('recrutement')
             ->name('recruitment.')
